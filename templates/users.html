@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="zh-Hant">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{% if selected_user %}{{ selected_user.name }} 的 BMI 紀錄{% else %}使用者紀錄{% endif %} · 好好生活</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  </head>
+  <body>
+    <div class="page">
+      <header class="site-header">
+        <a class="brand" href="{{ url_for('index') }}"><span class="brand-mark" aria-hidden="true">✳</span>好好生活 <span class="brand-en">WELL LIVING</span></a>
+        <nav class="site-nav" aria-label="主要導覽"><a href="{{ url_for('index') }}">BMI 計算器</a><a href="{{ url_for('users') }}" {% if not selected_user %}aria-current="page"{% endif %}>使用者紀錄</a></nav>
+      </header>
+      <main class="history-page">
+        <span class="section-number">BMI HISTORY / 身體的每一步</span>
+        {% if selected_user %}
+          <h1>{{ selected_user.name }} 的 BMI 紀錄</h1>
+          <p class="intro">共 {{ records|length }} 筆，依計算順序由新到舊排列。時間皆為台灣時間（UTC+8）。</p>
+          <a class="back-link" href="{{ url_for('users') }}">← 返回所有使用者</a>
+          <div class="history-table-wrap" role="region" aria-label="BMI 歷史紀錄" tabindex="0">
+            <table class="history-table">
+              <caption>{{ selected_user.name }} 的歷次計算結果</caption>
+              <thead><tr><th scope="col">計算時間（台灣）</th><th scope="col">BMI</th><th scope="col">身高（cm）</th><th scope="col">體重（kg）</th></tr></thead>
+              <tbody>
+                {% for record in records %}
+                  <tr><td><time datetime="{{ record.calculated_at }}">{{ record.calculated_at|taipei_time }}</time></td><td><strong class="bmi-value{% if record.bmi < 18.5 or record.bmi >= 24 %} bmi-alert{% endif %}">{{ '%.1f'|format(record.bmi) }}</strong></td><td>{{ '%g'|format(record.height) }}</td><td>{{ '%g'|format(record.weight) }}</td></tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        {% else %}
+          <h1>使用者紀錄</h1>
+          <p class="intro">點選姓名，查看每位使用者的歷次 BMI 與計算時間。</p>
+          {% if users %}
+            <ul class="user-list">
+              {% for user in users %}
+                <li><a class="user-card" href="{{ url_for('user_history', user_id=user.id) }}"><strong>{{ user.name }}</strong><span>{{ user.record_count }} 筆紀錄 · 最近計算 {{ user.latest_at|taipei_time }}（台灣時間）</span><span class="user-arrow" aria-hidden="true">↗</span></a></li>
+              {% endfor %}
+            </ul>
+          {% else %}
+            <div class="history-empty"><h2>目前還沒有使用者紀錄</h2><p>到計算器填寫姓名、身高與體重，完成計算後就會出現在這裡。</p><a href="{{ url_for('index') }}">開始計算 BMI →</a></div>
+          {% endif %}
+        {% endif %}
+      </main>
+      <footer>© 好好生活 <span>TAKE CARE, EVERY DAY.</span></footer>
+    </div>
+  </body>
+</html>

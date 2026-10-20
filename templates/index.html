@@ -14,7 +14,7 @@
           <span class="brand-mark" aria-hidden="true">✳</span>
           好好生活 <span class="brand-en">WELL LIVING</span>
         </a>
-        <span class="header-note">把健康，從了解自己開始。</span>
+        <nav class="site-nav" aria-label="主要導覽"><a href="{{ url_for('users') }}">使用者紀錄 ↗</a></nav>
       </header>
 
       <main>
@@ -34,6 +34,12 @@
               </div>
 
               <form method="post" action="{{ url_for('index') }}" novalidate>
+                <div class="field name-field">
+                  <label for="name">姓名 <span>NAME / 選填</span></label>
+                  <input id="name" name="name" type="text" maxlength="80" autocomplete="name" placeholder="輸入姓名以儲存 BMI 紀錄" value="{{ name_input }}" aria-describedby="name-help{% if errors.name %} name-error{% endif %}" {% if errors.name %}aria-invalid="true"{% endif %}>
+                  <p class="field-help" id="name-help">同名會合併紀錄；未填寫僅計算，不儲存。所有人皆可查看已儲存的紀錄。</p>
+                  {% if errors.name %}<p class="field-error" id="name-error">{{ errors.name }}</p>{% endif %}
+                </div>
                 <div class="form-fields">
                   <div class="field">
                     <label for="height">身高 <span>HEIGHT</span></label>
@@ -69,6 +75,7 @@
                 <span class="result-label">你的體位屬於 <strong>{{ result.label }}</strong></span>
                 <h2 id="result-title">給你的健康建議</h2>
                 <p>{{ result.advice }}</p>
+                {% if result.user_id %}<a class="history-link" href="{{ url_for('user_history', user_id=result.user_id) }}">已儲存，查看 {{ name_input }} 的歷史紀錄 →</a>{% endif %}
                 <span class="result-decoration" aria-hidden="true">✳</span>
               </section>
             {% else %}
