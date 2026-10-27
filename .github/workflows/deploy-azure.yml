@@ -24,6 +24,7 @@ concurrency:
 jobs:
   deploy:
     runs-on: windows-latest
+    environment: staging
     env:
       AZURE_WEBAPP_NAME: ${{ vars.AZURE_WEBAPP_NAME }}
       AZURE_RESOURCE_GROUP: ${{ vars.AZURE_RESOURCE_GROUP }}
@@ -63,19 +64,39 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw 'Packaged Python runtime could not import the app' }
 
       - name: Sign in to Azure
-        uses: azure/login@v2
+        uses: azure/login@7184910d9eb2b1c5e48f7073824a90609bb9b6d6 # v2
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
 
-      - name: Verify Windows Web App
+      - name: Verify Windows Web App staging slot
         shell: pwsh
         run: |
-          $platform = az webapp show --resource-group $env:AZURE_RESOURCE_GROUP --name $env:AZURE_WEBAPP_NAME --query reserved --output tsv
-          if ($LASTEXITCODE -ne 0) { throw 'Azure Web App lookup failed' }
+          $platform = az webapp show --resource-group $env:AZURE_RESOURCE_GROUP --name $env:AZURE_WEBAPP_NAME --slot staging --query reserved --output tsv
+          if ($LASTEXITCODE -ne 0) { throw 'Azure Web App staging slot lookup failed' }
           if ($platform.Trim().ToLowerInvariant() -ne 'false') { throw 'Target must be a Windows Azure Web App' }
 
-      - name: Deploy to Azure Web App
+      - name: Deploy to Azure Web App staging slot
         uses: azure/webapps-deploy@v3
         with:
           app-name: ${{ env.AZURE_WEBAPP_NAME }}
+          slot-name: staging
           package: dist
+
+  swap:
+    needs: deploy
+    runs-on: windows-latest
+    environment: production
+    env:
+      AZURE_WEBAPP_NAME: ${{ vars.AZURE_WEBAPP_NAME }}
+      AZURE_RESOURCE_GROUP: ${{ vars.AZURE_RESOURCE_GROUP }}
+    steps:
+      - name: Sign in to Azure
+        uses: azure/login@7184910d9eb2b1c5e48f7073824a90609bb9b6d6 # v2
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Swap staging slot into production
+        shell: pwsh
+        run: |
+          az webapp deployment slot swap --resource-group $env:AZURE_RESOURCE_GROUP --name $env:AZURE_WEBAPP_NAME --slot staging --target-slot production
+          if ($LASTEXITCODE -ne 0) { throw 'Azure Web App slot swap failed' }
